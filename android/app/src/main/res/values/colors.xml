@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="theme_brand_primary">#1565C0</color>
+    <color name="theme_text_primary">#212121</color>
+    <color name="theme_surface">#FFFFFF</color>
+    <color name="theme_background">#F5F5F5</color>
+</resources>

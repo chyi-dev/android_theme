@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Theme Demo</string>
+    <string name="home_title">Welcome back (builtin), {name}</string>
+    <string name="home_body">This is the APK strings.xml fallback copy, shown when the remote pack is missing.</string>
+    <string name="banner_cd">Home banner</string>
+    <string name="logo_cd">Logo</string>
+    <string name="pull_now">Pull now</string>
+    <string name="chat_short">Hi (builtin)</string>
+    <string name="chat_bubble">This is the APK chat_bubble.9.png fallback. Short and long bubbles share one nine-patch; corners should not squash.</string>
+    <string name="locale_zh">中文 zh-CN</string>
+    <string name="locale_en">English</string>
+    <string name="status_snapshot">snapshotId: %1$s</string>
+    <string name="status_source">source: %1$s</string>
+    <string name="status_published">publishedAt: %1$s</string>
+    <string name="status_error">error: %1$s</string>
+    <string name="status_i18n_snapshot">i18nSnapshotId: %1$s</string>
+    <string name="status_i18n_source">i18n source: %1$s</string>
+    <string name="status_locale">locale: %1$s</string>
+    <string name="status_i18n_error">i18n error: %1$s</string>
+    <string name="status_base_url">baseUrl: %1$s</string>
+    <string name="status_render">render: %1$s</string>
+    <string name="settings_title">Server URL</string>
+    <string name="settings_base_url_label">Theme service base URL</string>
+    <string name="settings_base_url_hint">http://10.0.2.2:8787</string>
+    <string name="settings_help">Emulator: http://10.0.2.2:8787 (host localhost). Real device: your PC LAN IP, e.g. http://192.168.1.12:8787, same Wi-Fi. This demo allows HTTP cleartext. Language packs share this host: /v1/theme/manifest and /v1/i18n/manifest.</string>
+    <string name="settings_use_emulator">Use emulator default</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved. Home will fetch again.</string>
+    <string name="settings_invalid">Invalid URL</string>
+</resources>

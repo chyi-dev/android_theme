@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ThemeDemo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/theme_brand_primary</item>
+        <item name="colorPrimaryVariant">@color/theme_brand_primary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:statusBarColor">@color/theme_brand_primary</item>
+        <item name="android:windowBackground">@color/theme_background</item>
+    </style>
+</resources>
