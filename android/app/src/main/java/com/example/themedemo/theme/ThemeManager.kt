@@ -2,10 +2,10 @@ package com.example.themedemo.theme
 
 import android.content.Context
 import androidx.core.content.ContextCompat
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executors
 import android.os.Handler
 import android.os.Looper
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 fun interface ThemeListener {
     fun onThemeChanged(theme: AppliedTheme)
@@ -40,7 +40,7 @@ class ThemeManager(context: Context) {
         val cached = store.readLastGoodJson()
         current = if (cached != null) {
             try {
-                resolve(ThemeParser.parse(cached, ThemeSource.CACHE))
+                resolve(ThemeParser.parse(cached, ThemeSource.CACHE), downloadMissing = false)
             } catch (_: Exception) {
                 builtinTheme()
             }
@@ -49,41 +49,50 @@ class ThemeManager(context: Context) {
         }
     }
 
-    fun fetchAsync() {
+    fun fetchAsync(onDone: (() -> Unit)? = null) {
         val url = store.baseUrl()
         io.execute {
             try {
                 val json = fetcher.fetchManifestJson(url)
                 val manifest = ThemeParser.parse(json, ThemeSource.NETWORK)
-                val applied = resolve(manifest)
+                val applied = resolve(manifest, downloadMissing = true)
                 store.saveLastGoodJson(json)
-                publish(applied)
+                publish(applied, onDone)
             } catch (err: Exception) {
                 val message = err.message ?: err.javaClass.simpleName
-                publish(current.copy(lastError = message))
+                publish(current.copy(lastError = message), onDone)
             }
         }
     }
 
-    private fun publish(theme: AppliedTheme) {
+    private fun publish(theme: AppliedTheme, onDone: (() -> Unit)? = null) {
         main.post {
             current = theme
             listeners.forEach { it.onThemeChanged(theme) }
+            onDone?.invoke()
         }
     }
 
-    private fun resolve(manifest: ThemeManifest): AppliedTheme {
+    private fun resolve(manifest: ThemeManifest, downloadMissing: Boolean): AppliedTheme {
         val colors = builtinColorMap().toMutableMap()
         for ((token, hex) in manifest.colors) {
             ThemeColors.parseHex(hex)?.let { colors[token] = it }
         }
-        val urls = manifest.assets.mapValues { it.value.url }
+        val assets = linkedMapOf<String, AppliedAsset>()
+        for ((slot, ref) in manifest.assets) {
+            val dest = store.assetFileFor(ref.hash, ref.url)
+            if (downloadMissing && (!dest.exists() || dest.length() == 0L)) {
+                fetcher.downloadToFile(ref.url, dest)
+            }
+            val file = dest.takeIf { it.exists() && it.length() > 0L }
+            assets[slot] = AppliedAsset(type = ref.type, file = file, url = ref.url)
+        }
         return AppliedTheme(
             snapshotId = manifest.snapshotId,
             source = manifest.source,
             publishedAt = manifest.publishedAt,
             colors = colors,
-            assetUrls = urls,
+            assets = assets,
             lastError = null,
         )
     }
@@ -93,7 +102,7 @@ class ThemeManager(context: Context) {
         source = ThemeSource.BUILTIN,
         publishedAt = null,
         colors = builtinColorMap(),
-        assetUrls = emptyMap(),
+        assets = emptyMap(),
         lastError = null,
     )
 

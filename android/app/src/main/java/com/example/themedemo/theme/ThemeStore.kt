@@ -7,6 +7,13 @@ import java.io.File
 class ThemeStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val lastGoodFile = File(context.applicationContext.filesDir, "theme/last-good.json")
+    private val assetsDir = File(context.applicationContext.filesDir, "theme/assets")
+
+    fun assetFileFor(hash: String?, url: String): File {
+        val key = hash?.removePrefix("sha256:")?.take(40)
+            ?: Integer.toHexString(url.hashCode())
+        return File(assetsDir, key)
+    }
 
     fun baseUrl(): String = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL)?.trim()?.trimEnd('/')
         ?: DEFAULT_BASE_URL

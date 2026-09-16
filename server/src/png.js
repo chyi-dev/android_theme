@@ -77,4 +77,47 @@ function makeLogoPng(hex = "#E65100") {
   });
 }
 
-module.exports = { encodePng, makeBannerPng, makeLogoPng };
+function insideRoundedRect(x, y, w, h, r) {
+  if (x < 0 || y < 0 || x >= w || y >= h) return false;
+  if (x >= r && x < w - r) return true;
+  if (y >= r && y < h - r) return true;
+  const cx = x < r ? r : w - 1 - r;
+  const cy = y < r ? r : h - 1 - r;
+  const dx = x - cx;
+  const dy = y - cy;
+  return dx * dx + dy * dy <= r * r;
+}
+
+/** Source .9.png (1px markers) for a stretchable chat bubble / panel. */
+function makeNinePatchBubblePng(hex = "#E65100") {
+  const [br, bg, bb] = hexToRgb(hex);
+  const cw = 160;
+  const ch = 96;
+  const w = cw + 2;
+  const h = ch + 2;
+  const corner = 18;
+  const pad = 10;
+  const outline = 3;
+  const radius = 16;
+  const black = [0, 0, 0, 255];
+  const clear = [0, 0, 0, 0];
+  return encodePng(w, h, (x, y) => {
+    const onBorder = y === 0 || y === h - 1 || x === 0 || x === w - 1;
+    if (onBorder) {
+      if (y === 0 && x >= corner && x <= w - 1 - corner) return black;
+      if (x === 0 && y >= corner && y <= h - 1 - corner) return black;
+      if (y === h - 1 && x >= pad && x <= w - 1 - pad) return black;
+      if (x === w - 1 && y >= pad && y <= h - 1 - pad) return black;
+      return clear;
+    }
+    const cx = x - 1;
+    const cy = y - 1;
+    if (!insideRoundedRect(cx, cy, cw, ch, radius)) return clear;
+    if (!insideRoundedRect(cx - outline, cy - outline, cw - outline * 2, ch - outline * 2, Math.max(1, radius - outline))) {
+      return [Math.max(0, br - 50), Math.max(0, bg - 50), Math.max(0, bb - 50), 255];
+    }
+    return [br, bg, bb, 255];
+  });
+}
+
+module.exports = { encodePng, makeBannerPng, makeLogoPng, makeNinePatchBubblePng };

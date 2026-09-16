@@ -1,21 +1,21 @@
 # android_theme
 
-最小可用的 **动态 Android 主题（颜色 + 图片）** 端到端 Demo：Web 管理台上传/改色 → 后端保存并发布 Manifest → Android（**仅 XML Views**）拉取并应用到界面。
+最小可用的 **动态 Android 主题（颜色 + 图片 + 语言包）** 端到端 Demo：Web 管理台改色/换图/改文案 → 后端保存并 **一次发布** Theme Manifest + i18n shards → Android（**仅 XML Views**）拉取并应用到界面。
 
 本仓库证明的是产品方案里的正确抽象：
 
 ```
-语义 Token / Slot（稳定）
-    → 远程 Theme Manifest（version / snapshotId + 绝对资源 URL）
-    → 客户端 ThemeRuntime 应用到 View
+语义 Token / Slot / String Key（稳定）
+    → 远程 Theme Manifest + 独立 Language Pack（snapshotId + 绝对 URL）
+    → 客户端 ThemeRuntime / t(key) 应用到 View
     → 内置 res/ 与 last-good 缓存作为永久降级
 ```
 
-**不会**在运行时替换 `R.color` / `R.drawable` / `R.string`。协议里也没有 Android resource int id。完整 i18n OTA、审批/灰度、SVG/Nine-patch 不在本 Demo 范围。
+**不会**在运行时替换 `R.color` / `R.drawable` / `R.string`。协议里也没有 Android resource int id。审批/灰度、完整 ICU 复数不在本 Demo 范围。占位符支持简单 `{name}`。包含一个 **`.9.png` 九宫格槽位**（`chat.bubble`）。
 
 ```
 /README.md
-/server/     Node + Express：草稿/发布、上传、Manifest、静态资源
+/server/     Node + Express：草稿/发布、上传、Theme + i18n Manifest、静态资源
 /web/        管理台（纯 HTML/JS，由 server 一起托管）
 /android/    Kotlin + XML Views（零 Compose）
 ```
@@ -37,17 +37,18 @@ npm start
 然后打开：
 
 - 管理台：http://localhost:8787/
-- 客户端 Manifest：http://localhost:8787/v1/theme/manifest
+- Theme Manifest：http://localhost:8787/v1/theme/manifest
+- i18n Manifest：http://localhost:8787/v1/i18n/manifest
 - 健康检查：http://localhost:8787/health
 
-服务监听 `0.0.0.0:8787`，同一局域网的真机也能访问。首次启动会写入种子主题到 `server/data/`（橙色品牌色 + 默认 Banner/Logo），Android 在还没人上传时也能拉到一份完整 Manifest。
+服务监听 `0.0.0.0:8787`。首次启动会写入种子主题 + `zh-CN`/`en` 语言包到 `server/data/`。同一局域网的真机也能访问。
 
 可选环境变量：
 
 | 变量 | 含义 |
 |------|------|
 | `PORT` | 监听端口，默认 `8787` |
-| `PUBLIC_BASE_URL` | 强制 Manifest 里的资源绝对 URL 前缀（一般不用；默认按请求 Host 生成，所以模拟器请求 `10.0.2.2` 时图片 URL 也是 `10.0.2.2`） |
+| `PUBLIC_BASE_URL` | 强制 Manifest 里的资源绝对 URL 前缀（一般不用；默认按请求 Host 生成） |
 
 运行测试：
 
@@ -57,37 +58,34 @@ cd server && npm test
 
 ---
 
-## 2. Web：改颜色 + 上传 Banner → 发布
+## 2. Web：改颜色 / Banner / 文案 → 发布
 
 1. 打开 http://localhost:8787/
-2. 修改 **品牌主色** `brand.primary`（以及 `text.primary` / `surface` / `background`）
-3. 为 **首页 Banner** `home.banner` 选择一张 PNG/JPEG/WebP（可选再换 Logo）
-4. 右侧预览会即时更新（草稿）
-5. 点 **发布到客户端**（会先保存草稿再生成新的 `snapshotId`）
+2. 修改颜色 Token（`brand.primary` 等）和/或上传 `home.banner`
+3. 在 **文案 Key / 语言包** 里切换 `zh-CN` / `en`，修改例如 `string.home.welcome`（可用 `{name}`，App 里会填 `Ada`）
+4. 可选：上传合法 **`.9.png`** 到 `chat.bubble`（聊天气泡背景）
+5. 右侧可切换预览语言；点 **发布到客户端**（同一按钮同时发布 theme snapshot + i18n snapshot）
 
-只有 **发布** 之后，`GET /v1/theme/manifest` 才会变化。Android 拉到的是已发布快照，不是未发布草稿。
+只有 **发布** 之后，`GET /v1/theme/manifest` 与 `GET /v1/i18n/manifest` 才会变化。
 
 ---
 
 ## 3. Android 模拟器
 
-1. 用 Android Studio 打开目录 `android/`（Gradle 工程，minSdk 24，ViewBinding，**无 Compose 依赖**）。
-2. 如提示 SDK，安装 Android SDK 34 + 一个 API 24+ 的模拟器（建议 Pixel + API 34）。
-3. 确认电脑上的 Node 服务已在 **8787** 运行。
-4. Run `app`。默认 Base URL 是 `http://10.0.2.2:8787`（模拟器访问宿主 localhost 的标准地址）。
-5. 启动后会立刻应用 **内置蓝色主题或上次缓存**，再在后台拉取远程主题。种子主题是橙色，所以第一次成功拉取时，工具栏/Banner 会从蓝变橙。
-6. 回到 Web 改色、换 Banner、发布，然后在 App 里点 **立即拉取** 或下拉刷新：颜色和 Banner 应更新，**无需重装 APK**。
-7. 状态区会显示 `snapshotId`、`source`（`network` | `cache` | `builtin`）和 `error`。
+1. 用 Android Studio 打开 `android/`（minSdk 24，ViewBinding，**无 Compose**）。
+2. 安装 SDK 34 + API 24+ 模拟器。确认 Node 服务在 **8787**。
+3. Run `app`。默认 Base URL：`http://10.0.2.2:8787`。
+4. 启动立刻应用 **builtin 或 last-good**（文案带「内置」），再后台拉取。种子远程文案是「你好，Ada！」这类，与内置可区分。
+5. 首页有 **中文 zh-CN / English** 切换；切换后 TextView 经 `t(key)` 重绑，不必重装。
+6. Web 改文案并发布后，App 点 **立即拉取**：新文案出现，`i18nSnapshotId` 变化。
 
 ### 真机（局域网 IP）
 
-模拟器才能用 `10.0.2.2`。真机请在 App 右上角 **服务地址** 改成电脑的局域网 IP：
+模拟器才能用 `10.0.2.2`。真机在右上角 **服务地址** 改成：
 
 ```text
 http://192.168.x.x:8787
 ```
-
-查 IP 示例：
 
 ```bash
 # Linux
@@ -96,43 +94,63 @@ hostname -I
 ipconfig getifaddr en0
 ```
 
-手机和电脑必须同一 Wi-Fi；本 Demo 已开启 HTTP cleartext（`usesCleartextTraffic` + `network_security_config`），仅用于本地演示。
+本 Demo 允许 HTTP cleartext，仅用于本地。
 
 ---
 
-## 4. 离线 / 错误 URL
+## 4. 离线 / 错误 URL / 同步后无需再请求后端
 
-- 启动时主线程只读本地 **last-good** JSON；没有缓存则用 APK 内 `res/values/colors.xml` + `res/drawable/*_default`。
-- 远程拉取在后台进行；失败时保留当前主题，状态区显示 error，**不会崩溃**。
-- 可在设置里填一个错误地址（例如 `http://10.0.2.2:1`）再拉取验证。
+**绘制路径是 cache-first，不依赖网络：**
 
-降级阶梯：network 新包失败 → 继续显示当前（通常是 last-good）→ 从未成功过则 builtin。
+1. `Application.onCreate` 同步读取 last-good：theme JSON、已下载的图片/`.9.png` 文件、i18n manifest + locale shards。
+2. 首帧立刻用这些本地文件 + `t(key)` 绑到 View。Banner/Logo 用 `BitmapFactory.decodeFile`；`chat.bubble` 用 `NinePatchDrawable`（解析 .9 标记，不是 URL / Coil HTTP）。
+3. 进前台才 **后台** `fetchAsync`。失败只更新 error 字段，**不改已经画上去的 last-good**。
+4. 因此：成功同步一次 → 关服务端 / 飞行模式 → 杀进程再开 App → 颜色、位图、九宫格气泡、文案都应还在，`source` 为 `cache`（或从未成功过则 `builtin`）。
+
+坏 URL 验证：设置里填 `http://10.0.2.2:1` 再拉取。不崩溃；`error` / `i18n error` 有内容。
+
+语言 fallback：`zh-CN` → `zh` → `en` → builtin `strings.xml`。
 
 ---
 
 ## 5. 协议（简化）
 
-`GET /v1/theme/manifest`：
+`GET /v1/theme/manifest` 增加 `linkedI18nSnapshotId`。
+
+`GET /v1/i18n/manifest`：
 
 ```json
 {
   "schemaVersion": 1,
-  "snapshotId": "snap_...",
+  "i18nSnapshotId": "i18n_snap_...",
   "publishedAt": "2026-09-16T03:00:00.000Z",
-  "ttlSeconds": 60,
-  "colors": {
-    "brand.primary": "#E65100",
-    "text.primary": "#3E2723",
-    "surface": "#FFF3E0",
-    "background": "#FFF8F1"
-  },
-  "assets": {
-    "home.banner": {
-      "url": "http://10.0.2.2:8787/assets/home.banner-xxxx.png",
+  "defaultLocale": "en",
+  "locales": ["zh-CN", "en"],
+  "linkedThemeSnapshotId": "snap_...",
+  "shards": [
+    {
+      "locale": "zh-CN",
+      "url": "http://10.0.2.2:8787/i18n/zh-CN-xxxx.json",
       "hash": "sha256:...",
-      "mime": "image/png"
+      "keyCount": 6
     },
-    "logo": { "url": "...", "hash": "sha256:...", "mime": "image/png" }
+    { "locale": "en", "url": "...", "hash": "sha256:...", "keyCount": 4 }
+  ]
+}
+```
+
+Shard 示例：
+
+```json
+{
+  "locale": "zh-CN",
+  "messages": {
+    "string.app.title": "动态主题 Demo",
+    "string.home.welcome": "你好，{name}！",
+    "string.home.body": "这段文字来自远程语言包（zh-CN）。",
+    "string.action.pull": "立即拉取",
+    "string.chat.short": "你好",
+    "string.chat.bubble": "这是可拉伸的九宫格气泡。"
   }
 }
 ```
@@ -141,18 +159,37 @@ ipconfig getifaddr en0
 
 | 方法 | 路径 | 作用 |
 |------|------|------|
-| GET | `/admin/theme` | 草稿 + 已发布快照 |
+| GET | `/admin/theme` | 草稿（含 strings）+ 已发布 theme/i18n |
 | PUT | `/admin/theme/colors` | 更新草稿颜色 |
-| POST | `/admin/theme/assets/:slot` | 上传 `file` 到 `home.banner` 或 `logo` |
-| POST | `/admin/theme/publish` | 把草稿写成新 snapshot，供 Android 拉取 |
+| PUT | `/admin/i18n` | 更新草稿文案 `{ messages: { "zh-CN": {...}, "en": {...} } }` |
+| POST | `/admin/theme/assets/:slot` | 上传图片 |
+| POST | `/admin/theme/publish` | **同时**发布 theme + language pack |
+| GET | `/v1/theme/manifest` | 客户端主题 |
+| GET | `/v1/i18n/manifest` | 客户端语言包索引 |
 
-上传文件落在 `server/data/assets/`。
+上传图片：`server/data/assets/`。语言包分片：`server/data/i18n/`。
 
 ---
 
-## 6. Android 模块约束
+## 6. QA 验收清单
+
+Tester 按下面打勾即可（无需重装 APK）：
+
+1. **启动服务** `cd server && npm install && npm start`，浏览器打开 http://localhost:8787/ ，预览能在 zh-CN / en 之间切换。
+2. **改文案**：把 `string.home.welcome` 的 zh-CN 改成例如 `QA你好，{name}`，en 改成 `QA Hello, {name}`，点 **发布到客户端**。记下新的 `i18n snapshotId`。
+3. **Android 拉取**：模拟器打开 App → **立即拉取**。标题应变为 `QA你好，Ada`（占位符 `Ada`）。状态区 `i18nSnapshotId` 与 Web 一致，`i18n source` 为 `network`。
+4. **切语言**：点 **English**，标题变为 `QA Hello, Ada`，正文为英文；再切回中文。不要求 Activity 重启。
+5. **主题仍在**：改 `brand.primary` 并发布后，工具栏颜色与 Banner 仍随主题更新（语言包与主题同一次 Publish）。
+6. **九宫格拉伸**：首页有短气泡和长气泡，共用 `chat.bubble` `.9.png`。长文案应变宽/变高，**圆角保持、不是整图被 ImageView 拉变形**。可选：Web 上传另一张合法 `.9.png` 后发布再拉取，背景更换且拉伸仍正确。离线 builtin 使用 `res/drawable/chat_bubble.9.png`。
+7. **同步后完全离线**：先成功拉取一次 → **关掉 Node 服务或开飞行模式** → 杀进程再打开 App（不要点拉取也可以）。颜色、Banner、两个九宫格气泡、中英文案都还在；`source` / `i18n source` 为 `cache`；状态 `render: local cache`。过程中不应再为了**绘制**去请求后端（后台刷新失败只显示 error）。
+8. **坏 URL**：设置里改成 `http://10.0.2.2:1` → 立即拉取。App 不崩溃；继续显示 last-good；`error` / `i18n error` 有内容。
+9. **约束**：Android 工程无 Compose 依赖、无 `@Composable`；协议与 UI 均无 `R.string` int id。绘制路径不使用 Coil HTTP URL。
+
+---
+
+## 7. Android 模块约束
 
 - 仅 Activities + XML layouts + Views。
-- 图片加载：Coil；网络：OkHttp。
-- 语义 Token 在客户端映射到运行时色值；`R.color.*` / `R.drawable.*` **只作为 builtin fallback**。
+- 网络：OkHttp（仅 fetch/download）。绘制：本地文件 + `BitmapFactory` / `NinePatchDrawable` / `t(key)`。
+- `R.color` / `R.drawable` / `R.string` **只作为 builtin fallback**。
 - 仓库内不应出现 Jetpack Compose 依赖或 `@Composable`。

@@ -1,5 +1,7 @@
 package com.example.themedemo.theme
 
+import java.io.File
+
 enum class ThemeSource {
     BUILTIN,
     CACHE,
@@ -18,14 +20,25 @@ object ThemeTokens {
 object AssetSlots {
     const val HOME_BANNER = "home.banner"
     const val LOGO = "logo"
+    const val CHAT_BUBBLE = "chat.bubble"
 
-    val ALL = listOf(HOME_BANNER, LOGO)
+    val ALL = listOf(HOME_BANNER, LOGO, CHAT_BUBBLE)
 }
+
+const val ASSET_TYPE_IMAGE = "image"
+const val ASSET_TYPE_NINEPATCH = "ninepatch"
 
 data class AssetRef(
     val url: String,
     val hash: String? = null,
     val mime: String? = null,
+    val type: String = ASSET_TYPE_IMAGE,
+)
+
+data class AppliedAsset(
+    val type: String,
+    val file: File? = null,
+    val url: String? = null,
 )
 
 data class ThemeManifest(
@@ -43,6 +56,6 @@ data class AppliedTheme(
     val source: ThemeSource,
     val publishedAt: String?,
     val colors: Map<String, Int>,
-    val assetUrls: Map<String, String>,
+    val assets: Map<String, AppliedAsset>,
     val lastError: String? = null,
 )

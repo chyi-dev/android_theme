@@ -38,6 +38,7 @@ object ThemeColors {
     fun builtinDrawable(slot: String): Int = when (slot) {
         AssetSlots.HOME_BANNER -> R.drawable.home_banner_default
         AssetSlots.LOGO -> R.drawable.logo_default
+        AssetSlots.CHAT_BUBBLE -> R.drawable.chat_bubble
         else -> R.drawable.home_banner_default
     }
 }
@@ -61,6 +62,10 @@ object ThemeParser {
                     url = url,
                     hash = node.optString("hash").ifBlank { null },
                     mime = node.optString("mime").ifBlank { null },
+                    type = node.optString("type").ifBlank {
+                        if (key == AssetSlots.CHAT_BUBBLE || url.contains(".9.")) ASSET_TYPE_NINEPATCH
+                        else ASSET_TYPE_IMAGE
+                    },
                 )
             }
         }

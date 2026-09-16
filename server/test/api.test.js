@@ -113,3 +113,71 @@ test("rejects invalid color and unknown slot", async () => {
     assert.equal(slot.status, 400);
   });
 });
+
+test("seeded chat.bubble is a ninepatch with .9.png URL", async () => {
+  await withServer(async (base) => {
+    const body = await (await fetch(`${base}/v1/theme/manifest`)).json();
+    const bubble = body.assets["chat.bubble"];
+    assert.ok(bubble);
+    assert.equal(bubble.type, "ninepatch");
+    assert.match(bubble.url, /\.9\.png/);
+    const img = await fetch(bubble.url);
+    assert.equal(img.status, 200);
+    const bytes = new Uint8Array(await img.arrayBuffer());
+    assert.equal(bytes[0], 0x89);
+    assert.equal(bytes[1], 0x50);
+  });
+});
+test("seeded i18n manifest serves locale shards with absolute URLs", async () => {
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/v1/i18n/manifest`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.match(body.i18nSnapshotId, /^i18n_snap_/);
+    assert.equal(body.defaultLocale, "en");
+    const locales = body.shards.map((s) => s.locale).sort();
+    assert.deepEqual(locales, ["en", "zh-CN"]);
+    const zh = body.shards.find((s) => s.locale === "zh-CN");
+    assert.match(zh.url, /^http:\/\/127\.0\.0\.1:\d+\/i18n\//);
+    const shard = await (await fetch(zh.url)).json();
+    assert.equal(shard.locale, "zh-CN");
+    assert.match(shard.messages["string.home.welcome"], /\{name\}/);
+    const theme = await (await fetch(`${base}/v1/theme/manifest`)).json();
+    assert.equal(theme.linkedI18nSnapshotId, body.i18nSnapshotId);
+  });
+});
+
+test("string edits stay in draft until joint publish", async () => {
+  await withServer(async (base) => {
+    const before = await (await fetch(`${base}/v1/i18n/manifest`)).json();
+    const zhUrl = before.shards.find((s) => s.locale === "zh-CN").url;
+    const beforeShard = await (await fetch(zhUrl)).json();
+    const put = await fetch(`${base}/admin/i18n`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: {
+          "zh-CN": { "string.home.welcome": "QA改了，{name}" },
+          en: { "string.home.welcome": "QA changed, {name}" },
+        },
+      }),
+    });
+    assert.equal(put.status, 200);
+    const midShard = await (await fetch(zhUrl)).json();
+    assert.equal(midShard.messages["string.home.welcome"], beforeShard.messages["string.home.welcome"]);
+
+    const published = await fetch(`${base}/admin/theme/publish`, { method: "POST" });
+    const pubBody = await published.json();
+    assert.equal(published.status, 200);
+    assert.match(pubBody.i18nSnapshotId, /^i18n_snap_/);
+    assert.notEqual(pubBody.i18nSnapshotId, before.i18nSnapshotId);
+
+    const after = await (await fetch(`${base}/v1/i18n/manifest`)).json();
+    assert.equal(after.i18nSnapshotId, pubBody.i18nSnapshotId);
+    const afterZh = await (await fetch(after.shards.find((s) => s.locale === "zh-CN").url)).json();
+    assert.equal(afterZh.messages["string.home.welcome"], "QA改了，{name}");
+    const theme = await (await fetch(`${base}/v1/theme/manifest`)).json();
+    assert.equal(theme.linkedI18nSnapshotId, after.i18nSnapshotId);
+    assert.equal(after.linkedThemeSnapshotId, theme.snapshotId);
+  });
+});

@@ -10,7 +10,7 @@
   <header class="topbar">
     <div>
       <h1>动态主题管理台</h1>
-      <p class="sub">语义 Token / Slot → 发布 Manifest → Android 拉取。不替换 R.color / R.drawable。</p>
+      <p class="sub">语义 Token / Slot / String Key → 一次发布 Theme + Language Pack → Android 拉取。不替换 R.color / R.drawable / R.string。</p>
     </div>
     <div class="top-actions">
       <button id="saveBtn" type="button">保存草稿</button>
@@ -60,10 +60,27 @@
         <label>Logo <code>logo</code>（可选）</label>
         <input id="file-logo" type="file" accept="image/png,image/jpeg,image/webp" />
       </div>
+      <div class="field">
+        <label>聊天气泡九宫格 <code>chat.bubble</code></label>
+        <input id="file-bubble" type="file" accept=".9.png,image/png" />
+        <p class="hint">必须是<strong>合法的 .9.png</strong>（上下左右各 1px 黑线标记拉伸/内容区）。Android 会按 NinePatchDrawable 作为背景拉伸，而不是 ImageView 缩放。普通 PNG 会拉伸错误。</p>
+      </div>
+
+      <h2>文案 Key / 语言包</h2>
+      <p class="hint">独立 Language Pack，与主题同一「发布到客户端」按钮一起出 snapshot。占位符示例：<code>{name}</code>。</p>
+      <div class="locale-tabs" role="tablist">
+        <button type="button" class="locale-tab is-active" data-edit-locale="zh-CN">中文 zh-CN</button>
+        <button type="button" class="locale-tab" data-edit-locale="en">English</button>
+      </div>
+      <div id="stringFields"></div>
     </section>
 
     <section class="panel preview-panel">
       <h2>预览（草稿）</h2>
+      <div class="locale-tabs preview-tabs">
+        <button type="button" class="locale-tab is-active" data-preview-locale="zh-CN">预览 zh-CN</button>
+        <button type="button" class="locale-tab" data-preview-locale="en">预览 en</button>
+      </div>
       <div id="phone" class="phone">
         <div id="previewToolbar" class="phone-toolbar">Theme Demo</div>
         <img id="previewBanner" class="phone-banner" alt="home.banner" />
@@ -74,9 +91,15 @@
             <p id="previewBody">这段文字使用 text.primary；卡片使用 surface；页面背景使用 background。</p>
           </div>
         </div>
+        <div class="phone-action" id="previewPull">立即拉取</div>
+        <div class="phone-bubbles">
+          <div id="previewBubbleShort" class="phone-bubble">你好</div>
+          <div id="previewBubbleLong" class="phone-bubble">九宫格气泡预览（Web 用 border-image 近似；Android 才是真正的 NinePatch）。</div>
+        </div>
       </div>
       <dl class="meta">
-        <div><dt>已发布 snapshotId</dt><dd id="publishedId">—</dd></div>
+        <div><dt>Theme snapshotId</dt><dd id="publishedId">—</dd></div>
+        <div><dt>i18n snapshotId</dt><dd id="publishedI18nId">—</dd></div>
         <div><dt>发布时间</dt><dd id="publishedAt">—</dd></div>
       </dl>
       <p id="status" class="status">加载中…</p>
