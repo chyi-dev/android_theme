@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">动态主题 Demo</string>
+    <string name="home_title">欢迎回来</string>
+    <string name="home_body">颜色来自语义 Token，Banner/Logo 来自语义 Slot。断网时使用内置或上次成功缓存，不会替换 R.color / R.drawable。</string>
+    <string name="banner_cd">首页 Banner</string>
+    <string name="logo_cd">Logo</string>
+    <string name="pull_now">立即拉取</string>
+    <string name="status_snapshot">snapshotId: %1$s</string>
+    <string name="status_source">source: %1$s</string>
+    <string name="status_published">publishedAt: %1$s</string>
+    <string name="status_error">error: %1$s</string>
+    <string name="status_base_url">baseUrl: %1$s</string>
+    <string name="settings_title">服务地址</string>
+    <string name="settings_base_url_label">主题服务 Base URL</string>
+    <string name="settings_base_url_hint">http://10.0.2.2:8787</string>
+    <string name="settings_help">模拟器请用 http://10.0.2.2:8787（指向电脑的 localhost）。真机请改成电脑的局域网 IP，例如 http://192.168.1.12:8787，并保证手机与电脑同一 Wi-Fi。本 Demo 允许 HTTP cleartext。</string>
+    <string name="settings_use_emulator">填入模拟器默认地址</string>
+    <string name="settings_save">保存</string>
+    <string name="settings_saved">已保存，返回首页会重新拉取</string>
+    <string name="settings_invalid">地址无效</string>
+</resources>

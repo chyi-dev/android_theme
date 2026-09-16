@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>动态主题管理台</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>动态主题管理台</h1>
+      <p class="sub">语义 Token / Slot → 发布 Manifest → Android 拉取。不替换 R.color / R.drawable。</p>
+    </div>
+    <div class="top-actions">
+      <button id="saveBtn" type="button">保存草稿</button>
+      <button id="publishBtn" type="button" class="primary">发布到客户端</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>颜色 Token</h2>
+      <div class="field">
+        <label for="color-brand">品牌主色 <code>brand.primary</code></label>
+        <div class="color-row">
+          <input id="color-brand" type="color" data-token="brand.primary" />
+          <input id="hex-brand" class="hex" data-token="brand.primary" maxlength="9" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="color-text">主文字色 <code>text.primary</code></label>
+        <div class="color-row">
+          <input id="color-text" type="color" data-token="text.primary" />
+          <input id="hex-text" class="hex" data-token="text.primary" maxlength="9" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="color-surface">表面色 <code>surface</code></label>
+        <div class="color-row">
+          <input id="color-surface" type="color" data-token="surface" />
+          <input id="hex-surface" class="hex" data-token="surface" maxlength="9" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="color-bg">背景色 <code>background</code></label>
+        <div class="color-row">
+          <input id="color-bg" type="color" data-token="background" />
+          <input id="hex-bg" class="hex" data-token="background" maxlength="9" />
+        </div>
+      </div>
+
+      <h2>图片槽位</h2>
+      <div class="field">
+        <label>首页 Banner <code>home.banner</code></label>
+        <input id="file-banner" type="file" accept="image/png,image/jpeg,image/webp" />
+        <p class="hint">PNG / JPEG / WebP，≤ 2MB。上传后进入草稿，发布后 Android 才会拉到。</p>
+      </div>
+      <div class="field">
+        <label>Logo <code>logo</code>（可选）</label>
+        <input id="file-logo" type="file" accept="image/png,image/jpeg,image/webp" />
+      </div>
+    </section>
+
+    <section class="panel preview-panel">
+      <h2>预览（草稿）</h2>
+      <div id="phone" class="phone">
+        <div id="previewToolbar" class="phone-toolbar">Theme Demo</div>
+        <img id="previewBanner" class="phone-banner" alt="home.banner" />
+        <div id="previewCard" class="phone-card">
+          <img id="previewLogo" class="phone-logo" alt="logo" />
+          <div>
+            <h3 id="previewTitle">欢迎回来</h3>
+            <p id="previewBody">这段文字使用 text.primary；卡片使用 surface；页面背景使用 background。</p>
+          </div>
+        </div>
+      </div>
+      <dl class="meta">
+        <div><dt>已发布 snapshotId</dt><dd id="publishedId">—</dd></div>
+        <div><dt>发布时间</dt><dd id="publishedAt">—</dd></div>
+        <div><dt>状态</dt><dd id="status">加载中…</dd></div>
+      </dl>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
